@@ -1,4 +1,4 @@
-const API_URL = "https://resq-emergency-response3.onrender.com";
+const API_URL = "https://resq-emergency-response3.onrender.com/api/v1";
 
 let token = localStorage.getItem("resq_token");
 let currentLocation = null;
