@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>ResQ | Emergency Response System</title>
+
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- ===============================
+     TOAST NOTIFICATIONS
+================================ -->
+<div id="toast-container"></div>
+
+
+<!-- ===============================
+     LOGIN / REGISTER SCREEN
+================================ -->
+<section id="auth-screen" class="auth-screen">
+
+    <div class="auth-brand">
+        <div class="brand-icon">✚</div>
+
+        <div>
+            <h1>ResQ</h1>
+            <span>Emergency Response</span>
+        </div>
+    </div>
+
+
+    <div class="auth-card">
+
+        <div class="auth-header">
+            <h2 id="auth-title">Welcome back</h2>
+
+            <p id="auth-subtitle">
+                Sign in to access your emergency dashboard.
+            </p>
+        </div>
+
+
+        <!-- ===============================
+             LOGIN FORM
+        ================================ -->
+        <form id="login-form">
+
+            <div class="form-group">
+                <label for="login-email">
+                    Email
+                </label>
+
+                <input
+                    id="login-email"
+                    name="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    autocomplete="email"
+                    required
+                >
+            </div>
+
+
+            <div class="form-group">
+                <label for="login-password">
+                    Password
+                </label>
+
+                <input
+                    id="login-password"
+                    name="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    autocomplete="current-password"
+                    required
+                >
+            </div>
+
+
+            <button
+                class="primary-button"
+                type="submit"
+            >
+                Sign In
+            </button>
+
+        </form>
+
+
+        <!-- ===============================
+             REGISTER FORM
+        ================================ -->
+        <form
+            id="register-form"
+            class="hidden"
+        >
+
+            <div class="form-group">
+                <label for="register-name">
+                    Full name
+                </label>
+
+                <input
+                    id="register-name"
+                    name="name"
+                    type="text"
+                    placeholder="John Doe"
+                    autocomplete="name"
+                    required
+                >
+            </div>
+
+
+            <div class="form-group">
+                <label for="register-email">
+                    Email
+                </label>
+
+                <input
+                    id="register-email"
+                    name="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    autocomplete="email"
+                    required
+                >
+            </div>
+
+
+            <div class="form-group">
+                <label for="register-phone">
+                    Phone number
+                </label>
+
+                <input
+                    id="register-phone"
+                    name="phone"
+                    type="tel"
+                    placeholder="+234..."
+                    autocomplete="tel"
+                    required
+                >
+            </div>
+
+
+            <div class="form-group">
+                <label for="register-password">
+                    Password
+                </label>
+
+                <input
+                    id="register-password"
+                    name="password"
+                    type="password"
+                    placeholder="Minimum 8 characters"
+                    minlength="8"
+                    autocomplete="new-password"
+                    required
+                >
+            </div>
+
+
+            <button
+                class="primary-button"
+                type="submit"
+            >
+                Create Account
+            </button>
+
+        </form>
+
+
+        <!-- ===============================
+             LOGIN / REGISTER SWITCH
+        ================================ -->
+        <div class="auth-switch">
+
+            <span id="switch-text">
+                Don't have an account?
+            </span>
+
+            <button
+                id="switch-auth"
+                type="button"
+            >
+                Create account
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <p class="auth-footer">
+        ResQ Emergency Platform • Prototype
+    </p>
+
+</section>
+
+
+
+<!-- ===============================
+     MAIN APPLICATION
+================================ -->
+<section
+    id="app-screen"
+    class="app-screen hidden"
+>
+
+
+    <!-- ===============================
+         SIDEBAR
+    ================================ -->
+    <aside class="sidebar">
+
+        <div class="sidebar-brand">
+
+            <div class="brand-icon">
+                ✚
+            </div>
+
+            <div>
+                <strong>ResQ</strong>
+                <span>Emergency Response</span>
+            </div>
+
+        </div>
+
+
+        <nav>
+
+            <button
+                class="nav-item active"
+                data-section="dashboard"
+                type="button"
+            >
+                <span>⌂</span>
+                Dashboard
+            </button>
+
+
+            <button
+                class="nav-item"
+                data-section="emergency"
+                type="button"
+            >
+                <span>🚨</span>
+                Report Emergency
+            </button>
+
+
+            <button
+                class="nav-item"
+                data-section="history"
+                type="button"
+            >
+                <span>◷</span>
+                My Reports
+            </button>
+
+        </nav>
+
+
+        <div class="sidebar-bottom">
+
+            <div class="security-box">
+
+                <div>🔒</div>
+
+                <div>
+                    <strong>Your data</strong>
+
+                    <p>
+                        Protected with secure authentication.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <button
+                id="logout-button"
+                class="logout-button"
+                type="button"
+            >
+                Sign Out
+            </button>
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- ===============================
+         MAIN CONTENT
+    ================================ -->
+    <main class="main-content">
+
+
+        <!-- TOP BAR -->
+        <header class="topbar">
+
+            <div>
+
+                <span class="topbar-label">
+                    Emergency Network
+                </span>
+
+                <h2 id="page-title">
+                    Dashboard
+                </h2>
+
+            </div>
+
+
+            <div class="user-menu">
+
+                <div class="status-dot"></div>
+
+                <div>
+
+                    <strong id="user-name">
+                        User
+                    </strong>
+
+                    <span>
+                        Protected account
+                    </span>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- ===============================
+             DASHBOARD
+        ================================ -->
+        <section
+            id="dashboard-section"
+            class="page-section"
+        >
+
+            <div class="hero-card">
+
+                <div>
+
+                    <span class="eyebrow">
+                        Emergency response
+                    </span>
+
+                    <h1>
+                        Help is closer<br>
+                        when you need it.
+                    </h1>
+
+                    <p>
+                        Quickly report an emergency and securely
+                        share your location with your configured
+                        emergency network.
+                    </p>
+
+
+                    <button
+                        id="hero-sos"
+                        class="sos-button"
+                        type="button"
+                    >
+                        <span>🚨</span>
+                        SEND SOS
+                    </button>
+
+                </div>
+
+
+                <div class="hero-illustration">
+
+                    <div class="pulse-circle">
+                        <span>+</span>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- STATISTICS -->
+            <div class="stats-grid">
+
+                <div class="stat-card">
+
+                    <div class="stat-icon blue">
+                        ◷
+                    </div>
+
+                    <div>
+                        <span>Total Reports</span>
+
+                        <strong id="total-reports">
+                            0
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon red">
+                        !
+                    </div>
+
+                    <div>
+                        <span>Active Reports</span>
+
+                        <strong id="active-reports">
+                            0
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon green">
+                        ✓
+                    </div>
+
+                    <div>
+                        <span>Resolved</span>
+
+                        <strong id="resolved-reports">
+                            0
+                        </strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- RECENT REPORTS -->
+            <div class="section-header">
+
+                <div>
+
+                    <span class="eyebrow">
+                        Activity
+                    </span>
+
+                    <h3>
+                        Recent emergency reports
+                    </h3>
+
+                </div>
+
+
+                <button
+                    class="text-button"
+                    data-section="history"
+                    type="button"
+                >
+                    View all →
+                </button>
+
+            </div>
+
+
+            <div
+                id="recent-reports"
+                class="reports-list"
+            >
+
+                <div class="empty-state">
+                    No emergency reports yet.
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ===============================
+             EMERGENCY SECTION
+        ================================ -->
+        <section
+            id="emergency-section"
+            class="page-section hidden"
+        >
+
+            <div class="section-header">
+
+                <div>
+
+                    <span class="eyebrow">
+                        Emergency center
+                    </span>
+
+                    <h3>
+                        Report an emergency
+                    </h3>
+
+                    <p>
+                        Only submit an SOS when you genuinely need
+                        assistance.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="emergency-layout">
+
+
+                <!-- EMERGENCY FORM -->
+                <div class="emergency-form-card">
+
+                    <form id="emergency-form">
+
+
+                        <!-- EMERGENCY TYPE -->
+                        <div class="form-group">
+
+                            <label for="emergency-type">
+                                Emergency type
+                            </label>
+
+                            <select
+                                id="emergency-type"
+                                required
+                            >
+
+                                <option value="">
+                                    Select emergency type
+                                </option>
+
+                                <option value="Medical">
+                                    Medical emergency
+                                </option>
+
+                                <option value="Accident">
+                                    Road accident
+                                </option>
+
+                                <option value="Fire">
+                                    Fire
+                                </option>
+
+                                <option value="Crime">
+                                    Crime / Threat
+                                </option>
+
+                                <option value="Kidnapping">
+                                    Kidnapping
+                                </option>
+
+                                <option value="Missing Person">
+                                    Missing person
+                                </option>
+
+                                <option value="Other">
+                                    Other
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <!-- DESCRIPTION -->
+                        <div class="form-group">
+
+                            <label for="description">
+                                Emergency description
+                            </label>
+
+                            <textarea
+                                id="description"
+                                rows="4"
+                                placeholder="Briefly describe what happened..."
+                            ></textarea>
+
+                        </div>
+
+
+                        <!-- CONTACT -->
+                        <div class="form-group">
+
+                            <label for="emergency-contact">
+                                Emergency contact
+                            </label>
+
+                            <input
+                                id="emergency-contact"
+                                type="tel"
+                                placeholder="+234..."
+                            >
+
+                        </div>
+
+
+                        <!-- MEDICAL INFORMATION -->
+                        <div class="form-group">
+
+                            <label for="medical-info">
+
+                                Medical information
+
+                                <span class="optional">
+                                    Optional
+                                </span>
+
+                            </label>
+
+
+                            <textarea
+                                id="medical-info"
+                                rows="3"
+                                placeholder="Allergies, medical conditions, medication, etc."
+                            ></textarea>
+
+                        </div>
+
+
+                        <!-- LOCATION -->
+                        <div class="location-box">
+
+                            <div class="location-icon">
+                                📍
+                            </div>
+
+
+                            <div>
+
+                                <strong>
+                                    Emergency location
+                                </strong>
+
+                                <p id="location-status">
+                                    Location has not been obtained.
+                                </p>
+
+                            </div>
+
+
+                            <button
+                                type="button"
+                                id="location-button"
+                                class="secondary-button"
+                            >
+                                Get location
+                            </button>
+
+                        </div>
+
+
+                        <!-- SEND SOS -->
+                        <button
+                            type="submit"
+                            class="danger-submit"
+                            id="submit-sos"
+                        >
+                            🚨 Send Emergency Alert
+                        </button>
+
+                    </form>
+
+                </div>
+
+
+
+                <!-- SAFETY CARD -->
+                <div class="safety-card">
+
+                    <div class="safety-icon">
+                        🛡
+                    </div>
+
+                    <h3>
+                        Before sending an SOS
+                    </h3>
+
+
+                    <ul>
+
+                        <li>
+                            Move to a safe location if possible.
+                        </li>
+
+                        <li>
+                            Provide accurate information.
+                        </li>
+
+                        <li>
+                            Keep your phone available.
+                        </li>
+
+                        <li>
+                            Contact official emergency services
+                            when appropriate.
+                        </li>
+
+                    </ul>
+
+
+                    <div class="warning">
+
+                        <strong>
+                            Important
+                        </strong>
+
+                        <p>
+                            This platform is a prototype and should
+                            not replace official emergency services.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ===============================
+             HISTORY
+        ================================ -->
+        <section
+            id="history-section"
+            class="page-section hidden"
+        >
+
+            <div class="section-header">
+
+                <div>
+
+                    <span class="eyebrow">
+                        Your activity
+                    </span>
+
+                    <h3>
+                        Emergency reports
+                    </h3>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="all-reports"
+                class="reports-list"
+            >
+
+                <div class="empty-state">
+                    Loading reports...
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</section>
+
+
+
+<!-- ===============================
+     SUCCESS MODAL
+================================ -->
+<div
+    id="success-modal"
+    class="modal hidden"
+>
+
+    <div class="modal-card">
+
+        <div class="success-icon">
+            ✓
+        </div>
+
+
+        <h2>
+            Emergency reported
+        </h2>
+
+
+        <p>
+            Your emergency report has been securely submitted.
+        </p>
+
+
+        <div class="incident-number">
+
+            <span>
+                Incident ID
+            </span>
+
+            <strong id="incident-id">
+                ---
+            </strong>
+
+        </div>
+
+
+        <button
+            id="close-modal"
+            class="primary-button"
+            type="button"
+        >
+            Continue
+        </button>
+
+    </div>
+
+</div>
+
+
+
+<!-- ===============================
+     JAVASCRIPT
+================================ -->
+<script src="app.js"></script>
+
+</body>
+</html>
