@@ -47,11 +47,23 @@ ALGORITHM = "HS256"
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
-# Telegram configuration
-# IMPORTANT:
-# Keep the real values in environment variables.
-TELEGRAM_BOT_TOKEN =("8976557269:AAHBCvaPiqrMIgfu8Dk13W0b700Mdy8k5fc")
-TELEGRAM_CHAT_ID =("8145643961")
+
+# ============================================================
+# TELEGRAM CONFIGURATION
+# ============================================================
+
+# DO NOT put the real Telegram token in this file.
+# Add these values in Render Environment Variables.
+
+TELEGRAM_BOT_TOKEN = os.getenv(
+    "8976557269:AAHBCvaPiqrMIgfu8Dk13W0b700Mdy8k5fc",
+    ""
+)
+
+TELEGRAM_CHAT_ID = os.getenv(
+    "8145643961",
+    ""
+)
 
 
 # ============================================================
@@ -101,7 +113,11 @@ class User(Base):
 
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     name = Column(
         String(150),
@@ -213,6 +229,14 @@ app = FastAPI(
 # CORS
 # ============================================================
 
+# Your frontend:
+# https://resq-emergency-response3.onrender.com
+#
+# Your backend:
+# https://resq-emergency-response1.onrender.com
+#
+# The frontend must be allowed to communicate with this API.
+
 app.add_middleware(
     CORSMiddleware,
 
@@ -224,11 +248,21 @@ app.add_middleware(
         "http://localhost:3000",
     ],
 
-    allow_credentials=True,
+    allow_credentials=False,
 
-    allow_methods=["*"],
+    allow_methods=[
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "OPTIONS"
+    ],
 
-    allow_headers=["*"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Accept"
+    ],
 )
 
 
@@ -241,11 +275,9 @@ def get_db():
     db = SessionLocal()
 
     try:
-
         yield db
 
     finally:
-
         db.close()
 
 
@@ -323,8 +355,11 @@ def verify_password(
 
 def create_access_token(user_id: int):
 
-    expire = datetime.now(timezone.utc) + timedelta(
-        minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+    expire = (
+        datetime.now(timezone.utc)
+        + timedelta(
+            minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+        )
     )
 
     payload = {
@@ -381,12 +416,13 @@ def get_current_user(
 
         raise credentials_exception
 
-    user = db.query(User).filter(
-        User.id == user_id
-    ).first()
+    user = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .first()
+    )
 
     if user is None:
-
         raise credentials_exception
 
     return user
@@ -396,20 +432,21 @@ def get_current_user(
 # TELEGRAM NOTIFICATION
 # ============================================================
 
-async def send_telegram_alert(message: str) -> bool:
+async def send_telegram_alert(
+    message: str
+) -> bool:
 
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
 
         print(
             "Telegram notification skipped: "
-            "TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID "
-            "is not configured."
+            "Telegram environment variables are not configured."
         )
 
         return False
 
     url = (
-        f"https://api.telegram.org/"
+        "https://api.telegram.org/"
         f"bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     )
 
@@ -436,7 +473,9 @@ async def send_telegram_alert(message: str) -> bool:
 
         if result.get("ok"):
 
-            print("Telegram emergency alert sent.")
+            print(
+                "Telegram emergency alert sent."
+            )
 
             return True
 
@@ -480,9 +519,13 @@ def register(
     db: Session = Depends(get_db)
 ):
 
-    existing_user = db.query(User).filter(
-        User.email == request.email.lower()
-    ).first()
+    email = request.email.lower().strip()
+
+    existing_user = (
+        db.query(User)
+        .filter(User.email == email)
+        .first()
+    )
 
     if existing_user:
 
@@ -491,29 +534,40 @@ def register(
             detail="An account with this email already exists."
         )
 
-    user = User(
+    try:
 
-        name=request.name.strip(),
-
-        email=request.email.lower(),
-
-        phone=request.phone.strip(),
-
-        password_hash=hash_password(
-            request.password
+        user = User(
+            name=request.name.strip(),
+            email=email,
+            phone=request.phone.strip(),
+            password_hash=hash_password(
+                request.password
+            )
         )
-    )
 
-    db.add(user)
+        db.add(user)
 
-    db.commit()
+        db.commit()
 
-    db.refresh(user)
+        db.refresh(user)
 
-    return {
-        "message": "Account created successfully.",
-        "user_id": user.id
-    }
+        return {
+            "message": "Account created successfully.",
+            "user_id": user.id
+        }
+
+    except Exception as error:
+
+        db.rollback()
+
+        print(
+            f"Registration error: {error}"
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to create account."
+        )
 
 
 # ============================================================
@@ -526,9 +580,13 @@ def login(
     db: Session = Depends(get_db)
 ):
 
-    user = db.query(User).filter(
-        User.email == form_data.username.lower()
-    ).first()
+    email = form_data.username.lower().strip()
+
+    user = (
+        db.query(User)
+        .filter(User.email == email)
+        .first()
+    )
 
     if not user:
 
@@ -537,10 +595,25 @@ def login(
             detail="Incorrect email or password."
         )
 
-    if not verify_password(
-        form_data.password,
-        user.password_hash
-    ):
+    try:
+
+        password_valid = verify_password(
+            form_data.password,
+            user.password_hash
+        )
+
+    except Exception as error:
+
+        print(
+            f"Password verification error: {error}"
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to verify password."
+        )
+
+    if not password_valid:
 
         raise HTTPException(
             status_code=401,
@@ -587,8 +660,8 @@ def distance_km(
 
     earth_radius = 6371
 
-    lat1 = math.radians(lat1)
-    lat2 = math.radians(lat2)
+    lat1_rad = math.radians(lat1)
+    lat2_rad = math.radians(lat2)
 
     delta_lat = math.radians(
         lat2 - lat1
@@ -601,8 +674,8 @@ def distance_km(
     a = (
         math.sin(delta_lat / 2) ** 2
         +
-        math.cos(lat1)
-        * math.cos(lat2)
+        math.cos(lat1_rad)
+        * math.cos(lat2_rad)
         * math.sin(delta_lon / 2) ** 2
     )
 
@@ -623,26 +696,27 @@ def detect_major_incident(
     db: Session
 ):
 
-    time_limit = datetime.now(
-        timezone.utc
-    ) - timedelta(minutes=10)
+    time_limit = (
+        datetime.now(timezone.utc)
+        - timedelta(minutes=10)
+    )
 
-    recent_reports = db.query(
-        Emergency
-    ).filter(
-        Emergency.created_at >= time_limit,
-        Emergency.id != emergency.id
-    ).all()
+    recent_reports = (
+        db.query(Emergency)
+        .filter(
+            Emergency.created_at >= time_limit,
+            Emergency.id != emergency.id
+        )
+        .all()
+    )
 
     nearby_count = 0
 
     for report in recent_reports:
 
         distance = distance_km(
-
             emergency.latitude,
             emergency.longitude,
-
             report.latitude,
             report.longitude
         )
@@ -661,9 +735,7 @@ def detect_major_incident(
 @app.post("/emergencies")
 async def create_emergency(
     request: EmergencyRequest,
-
     user: User = Depends(get_current_user),
-
     db: Session = Depends(get_db)
 ):
 
@@ -697,16 +769,37 @@ async def create_emergency(
         status="ACTIVE"
     )
 
-    db.add(emergency)
+    try:
 
-    db.commit()
+        db.add(emergency)
 
-    db.refresh(emergency)
+        db.commit()
+
+        db.refresh(emergency)
+
+    except Exception as error:
+
+        db.rollback()
+
+        print(
+            f"Emergency database error: {error}"
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to save emergency report."
+        )
+
+
+    # ========================================================
+    # MAJOR INCIDENT
+    # ========================================================
 
     major_incident = detect_major_incident(
         emergency,
         db
     )
+
 
     # ========================================================
     # GOOGLE MAPS LOCATION
@@ -718,6 +811,7 @@ async def create_emergency(
         f"&query={emergency.latitude},"
         f"{emergency.longitude}"
     )
+
 
     # ========================================================
     # TELEGRAM MESSAGE
@@ -768,6 +862,7 @@ ACTIVE
 RESQ Emergency Response System
 """
 
+
     # ========================================================
     # SEND TELEGRAM ALERT
     # ========================================================
@@ -776,11 +871,14 @@ RESQ Emergency Response System
         telegram_message
     )
 
+
     return {
 
-        "message": "Emergency alert submitted.",
+        "message":
+            "Emergency alert submitted.",
 
-        "incident_id": incident_id,
+        "incident_id":
+            incident_id,
 
         "major_incident_detected":
             major_incident,
@@ -800,22 +898,23 @@ RESQ Emergency Response System
 @app.get("/my-emergencies")
 def get_my_emergencies(
     user: User = Depends(get_current_user),
-
     db: Session = Depends(get_db)
 ):
 
-    emergencies = db.query(
-        Emergency
-    ).filter(
-        Emergency.user_id == user.id
-    ).order_by(
-        Emergency.created_at.desc()
-    ).all()
+    emergencies = (
+        db.query(Emergency)
+        .filter(
+            Emergency.user_id == user.id
+        )
+        .order_by(
+            Emergency.created_at.desc()
+        )
+        .all()
+    )
 
     return [
 
         {
-
             "incident_id":
                 emergency.incident_id,
 
@@ -836,10 +935,8 @@ def get_my_emergencies(
 
             "created_at":
                 emergency.created_at.isoformat()
-
         }
 
         for emergency in emergencies
 
     ]
-    # C:\Users\LENOVO\AppData\Local\Programs\Python\Python313\python.exe -m uvicorn main:app --reload
