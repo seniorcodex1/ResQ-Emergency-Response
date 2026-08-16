@@ -6,11 +6,25 @@ from typing import Optional
 
 import httpx
 
-from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import (
+    FastAPI,
+    Depends,
+    HTTPException,
+    status,
+)
 
-from pydantic import BaseModel, EmailStr, Field
+from fastapi.middleware.cors import CORSMiddleware
+
+from fastapi.security import (
+    OAuth2PasswordBearer,
+    OAuth2PasswordRequestForm,
+)
+
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    Field,
+)
 
 from sqlalchemy import (
     create_engine,
@@ -22,11 +36,18 @@ from sqlalchemy import (
     Text,
 )
 
-from sqlalchemy.orm import declarative_base, sessionmaker, Session
+from sqlalchemy.orm import (
+    declarative_base,
+    sessionmaker,
+    Session,
+)
 
 from passlib.context import CryptContext
 
-from jose import JWTError, jwt
+from jose import (
+    JWTError,
+    jwt,
+)
 
 
 # ============================================================
@@ -40,7 +61,7 @@ DATABASE_URL = os.getenv(
 
 SECRET_KEY = os.getenv(
     "SECRET_KEY",
-    "CHANGE_THIS_SECRET_KEY_IN_PRODUCTION"
+    "CHANGE_THIS_SECRET_KEY"
 )
 
 ALGORITHM = "HS256"
@@ -52,17 +73,15 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 # TELEGRAM CONFIGURATION
 # ============================================================
 
-# DO NOT put the real Telegram token in this file.
+# NEVER put the real bot token directly in this file.
 # Add these values in Render Environment Variables.
 
 TELEGRAM_BOT_TOKEN = os.getenv(
-    "8976557269:AAHBCvaPiqrMIgfu8Dk13W0b700Mdy8k5fc",
-    ""
+    "8976557269:AAHBCvaPiqrMIgfu8Dk13W0b700Mdy8k5fc"
 )
 
 TELEGRAM_CHAT_ID = os.getenv(
-    "8145643961",
-    ""
+    "8145643961"
 )
 
 
@@ -202,7 +221,8 @@ class Emergency(Base):
 
     status = Column(
         String(30),
-        default="ACTIVE"
+        default="ACTIVE",
+        nullable=False
     )
 
     created_at = Column(
@@ -211,11 +231,13 @@ class Emergency(Base):
     )
 
 
-Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(
+    bind=engine
+)
 
 
 # ============================================================
-# FASTAPI
+# FASTAPI APPLICATION
 # ============================================================
 
 app = FastAPI(
@@ -229,40 +251,31 @@ app = FastAPI(
 # CORS
 # ============================================================
 
-# Your frontend:
+# Frontend:
 # https://resq-emergency-response3.onrender.com
 #
-# Your backend:
+# Backend:
 # https://resq-emergency-response1.onrender.com
-#
-# The frontend must be allowed to communicate with this API.
 
 app.add_middleware(
     CORSMiddleware,
 
     allow_origins=[
         "https://resq-emergency-response3.onrender.com",
-        "http://127.0.0.1:5500",
+
+        # Local development
         "http://localhost:5500",
-        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5500",
+
         "http://localhost:3000",
+        "http://127.0.0.1:3000",
     ],
 
     allow_credentials=False,
 
-    allow_methods=[
-        "GET",
-        "POST",
-        "PUT",
-        "DELETE",
-        "OPTIONS"
-    ],
+    allow_methods=["*"],
 
-    allow_headers=[
-        "Authorization",
-        "Content-Type",
-        "Accept"
-    ],
+    allow_headers=["*"],
 )
 
 
@@ -282,7 +295,7 @@ def get_db():
 
 
 # ============================================================
-# SCHEMAS
+# REQUEST SCHEMAS
 # ============================================================
 
 class RegisterRequest(BaseModel):
@@ -333,9 +346,13 @@ class EmergencyRequest(BaseModel):
 # PASSWORD FUNCTIONS
 # ============================================================
 
-def hash_password(password: str) -> str:
+def hash_password(
+    password: str
+) -> str:
 
-    return pwd_context.hash(password)
+    return pwd_context.hash(
+        password
+    )
 
 
 def verify_password(
@@ -353,18 +370,21 @@ def verify_password(
 # JWT
 # ============================================================
 
-def create_access_token(user_id: int):
+def create_access_token(
+    user_id: int
+):
 
     expire = (
         datetime.now(timezone.utc)
-        + timedelta(
+        +
+        timedelta(
             minutes=ACCESS_TOKEN_EXPIRE_MINUTES
         )
     )
 
     payload = {
         "sub": str(user_id),
-        "exp": expire
+        "exp": expire,
     }
 
     return jwt.encode(
@@ -385,7 +405,9 @@ def get_current_user(
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
+
         detail="Invalid authentication credentials",
+
         headers={
             "WWW-Authenticate": "Bearer"
         }
@@ -399,7 +421,9 @@ def get_current_user(
             algorithms=[ALGORITHM]
         )
 
-        user_id = payload.get("sub")
+        user_id = payload.get(
+            "sub"
+        )
 
         if user_id is None:
             raise credentials_exception
@@ -412,13 +436,18 @@ def get_current_user(
 
         user_id = int(user_id)
 
-    except (TypeError, ValueError):
+    except (
+        TypeError,
+        ValueError
+    ):
 
         raise credentials_exception
 
     user = (
         db.query(User)
-        .filter(User.id == user_id)
+        .filter(
+            User.id == user_id
+        )
         .first()
     )
 
@@ -429,18 +458,27 @@ def get_current_user(
 
 
 # ============================================================
-# TELEGRAM NOTIFICATION
+# TELEGRAM
 # ============================================================
 
 async def send_telegram_alert(
     message: str
 ) -> bool:
 
-    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+    if not TELEGRAM_BOT_TOKEN:
 
         print(
             "Telegram notification skipped: "
-            "Telegram environment variables are not configured."
+            "TELEGRAM_BOT_TOKEN is not configured."
+        )
+
+        return False
+
+    if not TELEGRAM_CHAT_ID:
+
+        print(
+            "Telegram notification skipped: "
+            "TELEGRAM_CHAT_ID is not configured."
         )
 
         return False
@@ -453,7 +491,7 @@ async def send_telegram_alert(
     payload = {
         "chat_id": TELEGRAM_CHAT_ID,
         "text": message,
-        "disable_web_page_preview": False
+        "disable_web_page_preview": False,
     }
 
     try:
@@ -503,9 +541,26 @@ async def send_telegram_alert(
 def root():
 
     return {
-        "application": "ResQ Emergency Response System",
-        "status": "online",
-        "version": "1.0.0"
+        "application":
+            "ResQ Emergency Response System",
+
+        "status":
+            "online",
+
+        "version":
+            "1.0.0"
+    }
+
+
+# ============================================================
+# HEALTH CHECK
+# ============================================================
+
+@app.get("/health")
+def health():
+
+    return {
+        "status": "healthy"
     }
 
 
@@ -515,15 +570,20 @@ def root():
 
 @app.post("/register")
 def register(
+
     request: RegisterRequest,
+
     db: Session = Depends(get_db)
+
 ):
 
     email = request.email.lower().strip()
 
     existing_user = (
         db.query(User)
-        .filter(User.email == email)
+        .filter(
+            User.email == email
+        )
         .first()
     )
 
@@ -531,19 +591,26 @@ def register(
 
         raise HTTPException(
             status_code=400,
-            detail="An account with this email already exists."
+
+            detail=
+                "An account with this email already exists."
         )
 
-    try:
+    user = User(
 
-        user = User(
-            name=request.name.strip(),
-            email=email,
-            phone=request.phone.strip(),
-            password_hash=hash_password(
+        name=request.name.strip(),
+
+        email=email,
+
+        phone=request.phone.strip(),
+
+        password_hash=
+            hash_password(
                 request.password
             )
-        )
+    )
+
+    try:
 
         db.add(user)
 
@@ -551,23 +618,25 @@ def register(
 
         db.refresh(user)
 
-        return {
-            "message": "Account created successfully.",
-            "user_id": user.id
-        }
-
-    except Exception as error:
+    except Exception:
 
         db.rollback()
 
-        print(
-            f"Registration error: {error}"
-        )
-
         raise HTTPException(
             status_code=500,
-            detail="Unable to create account."
+
+            detail=
+                "Unable to create account."
         )
+
+    return {
+
+        "message":
+            "Account created successfully.",
+
+        "user_id":
+            user.id
+    }
 
 
 # ============================================================
@@ -576,57 +645,66 @@ def register(
 
 @app.post("/login")
 def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
+
+    form_data:
+        OAuth2PasswordRequestForm =
+            Depends(),
+
+    db: Session =
+        Depends(get_db)
+
 ):
 
-    email = form_data.username.lower().strip()
+    email = (
+        form_data.username
+        .lower()
+        .strip()
+    )
 
     user = (
         db.query(User)
-        .filter(User.email == email)
+        .filter(
+            User.email == email
+        )
         .first()
     )
 
-    if not user:
+    if user is None:
 
         raise HTTPException(
             status_code=401,
-            detail="Incorrect email or password."
+
+            detail=
+                "Incorrect email or password."
         )
 
-    try:
+    password_correct = verify_password(
 
-        password_valid = verify_password(
-            form_data.password,
-            user.password_hash
-        )
+        form_data.password,
 
-    except Exception as error:
+        user.password_hash
+    )
 
-        print(
-            f"Password verification error: {error}"
-        )
-
-        raise HTTPException(
-            status_code=500,
-            detail="Unable to verify password."
-        )
-
-    if not password_valid:
+    if not password_correct:
 
         raise HTTPException(
             status_code=401,
-            detail="Incorrect email or password."
+
+            detail=
+                "Incorrect email or password."
         )
 
-    token = create_access_token(
+    access_token = create_access_token(
         user.id
     )
 
     return {
-        "access_token": token,
-        "token_type": "bearer"
+
+        "access_token":
+            access_token,
+
+        "token_type":
+            "bearer"
     }
 
 
@@ -636,14 +714,25 @@ def login(
 
 @app.get("/me")
 def me(
-    user: User = Depends(get_current_user)
+
+    user: User =
+        Depends(get_current_user)
+
 ):
 
     return {
-        "id": user.id,
-        "name": user.name,
-        "email": user.email,
-        "phone": user.phone
+
+        "id":
+            user.id,
+
+        "name":
+            user.name,
+
+        "email":
+            user.email,
+
+        "phone":
+            user.phone
     }
 
 
@@ -652,16 +741,23 @@ def me(
 # ============================================================
 
 def distance_km(
+
     lat1,
     lon1,
     lat2,
     lon2
+
 ):
 
-    earth_radius = 6371
+    earth_radius = 6371.0
 
-    lat1_rad = math.radians(lat1)
-    lat2_rad = math.radians(lat2)
+    lat1_rad = math.radians(
+        lat1
+    )
+
+    lat2_rad = math.radians(
+        lat2
+    )
 
     delta_lat = math.radians(
         lat2 - lat1
@@ -672,16 +768,29 @@ def distance_km(
     )
 
     a = (
-        math.sin(delta_lat / 2) ** 2
+
+        math.sin(
+            delta_lat / 2
+        ) ** 2
+
         +
+
         math.cos(lat1_rad)
-        * math.cos(lat2_rad)
-        * math.sin(delta_lon / 2) ** 2
+        *
+        math.cos(lat2_rad)
+        *
+        math.sin(
+            delta_lon / 2
+        ) ** 2
     )
 
     c = 2 * math.atan2(
+
         math.sqrt(a),
-        math.sqrt(1 - a)
+
+        math.sqrt(
+            1 - a
+        )
     )
 
     return earth_radius * c
@@ -692,21 +801,34 @@ def distance_km(
 # ============================================================
 
 def detect_major_incident(
+
     emergency: Emergency,
+
     db: Session
+
 ):
 
     time_limit = (
+
         datetime.now(timezone.utc)
-        - timedelta(minutes=10)
+
+        -
+
+        timedelta(
+            minutes=10
+        )
     )
 
     recent_reports = (
+
         db.query(Emergency)
+
         .filter(
             Emergency.created_at >= time_limit,
+
             Emergency.id != emergency.id
         )
+
         .all()
     )
 
@@ -715,9 +837,13 @@ def detect_major_incident(
     for report in recent_reports:
 
         distance = distance_km(
+
             emergency.latitude,
+
             emergency.longitude,
+
             report.latitude,
+
             report.longitude
         )
 
@@ -734,18 +860,38 @@ def detect_major_incident(
 
 @app.post("/emergencies")
 async def create_emergency(
+
     request: EmergencyRequest,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+
+    user: User =
+        Depends(get_current_user),
+
+    db: Session =
+        Depends(get_db)
+
 ):
 
     incident_id = (
+
         "RSQ-"
-        + datetime.now(
+
+        +
+
+        datetime.now(
             timezone.utc
-        ).strftime("%Y%m%d")
-        + "-"
-        + secrets.token_hex(3).upper()
+        ).strftime(
+            "%Y%m%d"
+        )
+
+        +
+
+        "-"
+
+        +
+
+        secrets.token_hex(
+            3
+        ).upper()
     )
 
     emergency = Emergency(
@@ -754,17 +900,23 @@ async def create_emergency(
 
         user_id=user.id,
 
-        emergency_type=request.emergency_type,
+        emergency_type=
+            request.emergency_type,
 
-        description=request.description,
+        description=
+            request.description,
 
-        emergency_contact=request.emergency_contact,
+        emergency_contact=
+            request.emergency_contact,
 
-        medical_information=request.medical_information,
+        medical_information=
+            request.medical_information,
 
-        latitude=request.latitude,
+        latitude=
+            request.latitude,
 
-        longitude=request.longitude,
+        longitude=
+            request.longitude,
 
         status="ACTIVE"
     )
@@ -777,35 +929,30 @@ async def create_emergency(
 
         db.refresh(emergency)
 
-    except Exception as error:
+    except Exception:
 
         db.rollback()
 
-        print(
-            f"Emergency database error: {error}"
-        )
-
         raise HTTPException(
             status_code=500,
-            detail="Unable to save emergency report."
+
+            detail=
+                "Unable to save emergency report."
         )
 
-
-    # ========================================================
-    # MAJOR INCIDENT
-    # ========================================================
-
     major_incident = detect_major_incident(
+
         emergency,
+
         db
     )
 
-
     # ========================================================
-    # GOOGLE MAPS LOCATION
+    # GOOGLE MAPS
     # ========================================================
 
     map_url = (
+
         "https://www.google.com/maps/search/"
         "?api=1"
         f"&query={emergency.latitude},"
@@ -859,18 +1006,13 @@ async def create_emergency(
 ACTIVE
 
 ━━━━━━━━━━━━━━━━━━━━
+
 RESQ Emergency Response System
 """
-
-
-    # ========================================================
-    # SEND TELEGRAM ALERT
-    # ========================================================
 
     telegram_sent = await send_telegram_alert(
         telegram_message
     )
-
 
     return {
 
@@ -897,24 +1039,34 @@ RESQ Emergency Response System
 
 @app.get("/my-emergencies")
 def get_my_emergencies(
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+
+    user: User =
+        Depends(get_current_user),
+
+    db: Session =
+        Depends(get_db)
+
 ):
 
     emergencies = (
+
         db.query(Emergency)
+
         .filter(
             Emergency.user_id == user.id
         )
+
         .order_by(
             Emergency.created_at.desc()
         )
+
         .all()
     )
 
     return [
 
         {
+
             "incident_id":
                 emergency.incident_id,
 
@@ -935,6 +1087,7 @@ def get_my_emergencies(
 
             "created_at":
                 emergency.created_at.isoformat()
+
         }
 
         for emergency in emergencies
