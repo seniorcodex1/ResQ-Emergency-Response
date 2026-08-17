@@ -1,5 +1,4 @@
 const API_URL = "https://resq-emergency-response1.onrender.com";
-
 let token = localStorage.getItem("resq_token");
 let currentLocation = null;
 
@@ -56,10 +55,11 @@ async function apiRequest(url, options = {}) {
     try {
         response = await fetch(url, options);
     } catch (error) {
-        throw new Error(
-            "Unable to connect to the ResQ server. Please try again."
-        );
-    }
+    console.error("FETCH ERROR:", error);
+    throw new Error(
+        `Unable to connect to the ResQ server: ${error.message}`
+    );
+}
 
     const result = await readResponse(response);
 
